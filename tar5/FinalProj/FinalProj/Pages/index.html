@@ -1,0 +1,638 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Level HTML Template</title>
+
+    <!-- load stylesheets -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">  <!-- Google web font "Open Sans" -->
+    <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">                <!-- Font Awesome -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../content/modal.css" />
+
+    <!-- Bootstrap style -->
+    <link rel="stylesheet" type="text/css" href="slick/slick.css" />
+    <link rel="stylesheet" type="text/css" href="slick/slick-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/datepicker.css" />
+    <link href="css/tooplate-style - Register.css" rel="stylesheet" />                                   <!-- Templatemo style -->
+    <link rel="stylesheet" href="css/rSlider.min.css">
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+
+    <script>
+        //---Home funcs--------
+        $(document).ready(function () {
+
+            recommendedProperties();
+            user = localStorage.getItem("user-login");
+            if (user != null) {
+                enterUser(user);
+            }
+ 
+        })
+
+        function disconnectUser() {
+
+            localStorage.clear("user-login");
+            window.location.href = "index.html";
+        }
+
+        function enterUser(user) {
+            user = JSON.parse(user);
+            document.getElementById("dis").style.display = "block";
+            if (user.Email == "admin@gmail.com") {
+                $("#ltd").text("Admin Data");
+            }
+            else { $("#ltd").text("PROFILE"); }
+
+            $("#ltd").attr("href", "Profile.html");
+            $("#ltd").attr("onclick", "document.location='profile.html'")
+
+        }
+
+
+        //-----------render recommand properties-------------
+
+        function recommendedProperties() {
+            let api = "../api/Property";
+            ajaxCall("GET", api, "", rpSCB, rpECB);
+
+            return false;
+        }
+
+        function rpSCB(propsList) {
+
+            let str = "";
+
+            for (var j = 0; j < 8; j++) {
+                let rnd = Math.floor(Math.random() * propsList.length);
+                let Review_score = propsList[rnd].Review_scores_rating;
+
+                str += '<div class = Property2 style= position:relative;float:left;width:20%;margin:25px;background-color:#EBEBEB;text-align:center;padding:10px>';
+                str += `<img src = ${propsList[rnd].Picture_url} style="height:130px;width:200px;">`;
+                str += '<br />';
+                str += `<h5>${propsList[rnd].Name}</h5>`;
+                str += `<h6>The review score: ${Review_score}</h6>`;
+                str += `<h6>Price: ${propsList[rnd].Price}$ per night</h6> `
+                str += `<input type=button value="BOOK NOW" onclick="bookProperty(${propsList[rnd].Id},'${propsList[rnd].Name}','${propsList[rnd].Picture_url}', ${propsList[rnd].Price})" style= "background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-size: 0.7rem;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit;margin:2px;">`;
+                str += `<input type=button value="more details" onclick="getDetails(${propsList[rnd].Id})" style= "background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-size: 0.7rem;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit">`;
+                str += "</div>"
+
+            }
+            document.getElementById('recomnds').innerHTML = str;
+
+        }
+
+        function rpECB(err) {
+            alert(err);
+        }
+
+
+        //-----------Book Now-----------------------------------------------------------------------
+
+        function bookProperty(id, name, picture_url, price) {
+
+            if (localStorage["user-login"] == undefined) {
+                swal("Login required!", "Please log in or register to the system.", "warning");
+            }
+            else {
+                console.log(price);
+                localStorage["PropertyID"] = "" + id;
+                localStorage["PropertyName"] = name;
+                localStorage["Picture_url"] = picture_url;
+                localStorage["Price"] = "" + price;
+                
+                window.location = 'orders_page.html';
+
+            }
+        }
+
+
+        //-------get details funs--------------------------------------------------------
+
+        function getDetails(id) {
+
+            api = "../api/PropertyDetails?id=" + id;
+            ajaxCall("GET", api, "", getDetailsSucceesCB, getDetailsErrorCB);
+            return false;
+        }
+
+        function getDetailsSucceesCB(property) {
+            console.log(property.Latitude, property.Longitude)
+            loadGoogleMap("google-mapd", property.Latitude, property.Longitude);
+            let str = "";
+            str += `${property.Name}`
+            document.getElementById('modal-1-title').innerHTML = str;
+
+            str = "";
+
+
+            img = "";
+            img += `<img src = ${property.Picture_url} style="height:150px;width:200px;">`;
+            document.getElementById('imgdet').innerHTML = img;
+
+            str += `<br><h6>${property.Review_scores_rating} ★</h6>`;
+            str += `<h6>${property.Price}$ per night</h6>`;
+            str += `<h6>${(property.Distance / 1000).toFixed(2)} km from center</h6>`;
+            str += `<h6>${property.Bedrooms} Rooms, ${property.Bathrooms} Bathrooms</h6>`;
+
+            str += `${((property.Amenities.replaceAll('"', "")).replaceAll('[', "")).replaceAll(']', "")}<br>`;
+            str += `<br>${property.Description}<br>`;
+            str += `<br>${property.Neighborhood_overview}<br>`;
+
+            str += `<br>`;
+            document.getElementById('modal-1-content').innerHTML = str;
+            MicroModal.show('modal-1');
+        }
+
+        function getDetailsErrorCB(err) {
+            alert(err)
+        }
+
+        //-------Search func---------------------------------------------------------------------
+        $(document).ready(function () {
+            $("#search").click(searchProperties);
+        });
+
+        function searchProperties() {
+            let pricefrom = $("#pricefrom").val();
+            let priceto = $("#priceto").val();
+            let checkin = $("#inputCheckIn").val();
+            let checkout = $("#inputCheckOut").val();
+            let score = $("#score").val();
+            let distance = $("#dist").val();
+            let bedrooms = $("#bedrooms").val();
+
+            api = "../api/PropertySearch?pricefrom=" + pricefrom + "&priceto=" + priceto + "&checkin=" + checkin + "&checkout=" + checkout + "&score=" + score + "&distance=" + distance + "&bedrooms=" + bedrooms;
+            ajaxCall("GET", api, "", searchPropertiesSuccessCB, searchPropertiesErrorCB);
+
+            return false;
+        }
+
+        function searchPropertiesSuccessCB(propsList) {
+            ttl = "<div class='tm - bg - white ie - container - width - fix - 2'><h1 style='background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit'>Results</h1></div ></div >";
+            document.getElementById('ttl').innerHTML = ttl;
+
+            let str = "";
+
+            for (var i = 0; i < propsList.length; i++) {
+
+                let Review_score = propsList[i].Review_scores_rating;
+
+                str += '<div class = Property2 style= position:relative;float:left;width:20%;margin:25px;background-color:#EBEBEB;text-align:center;padding:10px>';
+                str += `<img src = ${propsList[i].Picture_url} style="height:130px;width:200px;">`;
+                str += '<br />';
+                str += `<h5>${propsList[i].Name}</h5>`;
+                str += `<h6>The review score: ${Review_score}</h6>`;
+                str += `<h6>${propsList[i].Bedrooms} Rooms</h6>`;
+
+                str += `<h6>${(propsList[i].Distance / 1000).toFixed(2)}km from center</h6>`;
+                str += `<h6>Price: ${propsList[i].Price}$ per night</h6> `
+                str += `<input type=button value="BOOK NOW" onclick="bookProperty(${propsList[i].Id},'${propsList[i].Name}','${propsList[i].Picture_url}', ${propsList[rnd].Price})" style= "background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-size: 0.7rem;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit;margin:2px;">`;
+                str += `<input type=button value="more details" onclick="getDetails(${propsList[i].Id})" style= "background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-size: 0.7rem;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit">`;
+                str += "</div>"
+
+            }
+
+            document.getElementById('results').innerHTML = str;
+        }
+
+        function searchPropertiesErrorCB(err) {
+            alert("Please fill all the fields");
+
+        }
+
+
+    </script>
+
+
+</head>
+<body>
+    <div class="tm-main-content" id="top">
+        <div class="tm-top-bar-bg"></div>
+        <div class="tm-top-bar" id="tm-top-bar">
+            <!-- Top Navbar -->
+            <div class="container">
+                <div class="row">
+
+                    <nav class="navbar navbar-expand-lg narbar-light">
+                        <a class="navbar-brand mr-auto" href="#">
+                            <img src="img/logo.png" alt="Site logo">
+                            airbns
+                        </a>
+                        <button type="button" id="nav-toggle" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div id="mainNav" class="collapse navbar-collapse tm-bg-white">
+                            <ul class="navbar-nav ml-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="index.html" onclick="document.location='index.html'">HOME</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="ltd" href="Register.html" onclick="document.location='Register.html'">REGISTER\LOGIN</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="dis" style="display:none" href="index.html" onclick="disconnectUser()">DISCONNECT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#tm-section-6">Contact Us</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!--------------------------Search Properties---------------------------------------------------------------------->
+        <div class="tm-section tm-bg-img" id="tm-section-1">
+            <div class="tm-bg-white ie-container-width-fix-2">
+                <div class="container ie-h-align-center-fix">
+                    <div class="row">
+                        <div class="col-xs-12 ml-auto mr-auto ie-container-width-fix">
+                            <form action="index.html" method="get" class="tm-search-form tm-section-pad-2">
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="text" class="form-control" id="pricefrom" placeholder="Price from" required>
+                                    </div>
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="text" class="form-control" id="priceto" placeholder="To" required>
+                                    </div>
+                                </div>
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-50">
+                                        <i class="fa fa-calendar fa-2x tm-form-element-icon"></i>
+                                        <input name="check-in" type="text" class="form-control" id="inputCheckIn" placeholder="Check In">
+                                    </div>
+                                    <div class="form-group tm-form-element tm-form-element-50">
+                                        <i class="fa fa-calendar fa-2x tm-form-element-icon"></i>
+                                        <input name="check-out" type="text" class="form-control" id="inputCheckOut" placeholder="Check Out">
+                                    </div>
+                                </div>
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <select name="score" class="form-control tm-select" id="score">
+                                            <option value="">Score</option>
+                                            <option value="1">1+</option>
+                                            <option value="2">2+</option>
+                                            <option value="3">3+</option>
+                                            <option value="4">4+</option>
+                                            <option value="5">5</option>
+
+                                        </select>
+
+                                    </div>
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <select name="room" class="form-control tm-select" id="dist">
+                                            <option value="">Distance</option>
+                                            <option value="1000">less than 1km</option>
+                                            <option value="2000">less than 2km</option>
+                                            <option value="3000">less than 3km</option>
+                                            <option value="4000">less than 4km</option>
+
+                                        </select>
+                                    </div>
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <select name="room" class="form-control tm-select" id="bedrooms">
+                                            <option value="">Bedrooms</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10">10</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <button type="submit" id="search" class="btn btn-primary tm-btn-search">Check Availability</button>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tm-section-2">
+            <div class="container">
+                <div class="row">
+                    <div class="col text-center">
+                        <h2 class="tm-section-title">We are here to help you!</h2>
+                        <p class="tm-color-white tm-section-subtitle"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-------------Book Now---------------------------------------------------------------------->
+
+        <div class="modal micromodal-slide" id="book" aria-hidden="true">
+            <div class="modal__overlay" tabindex="-3" data-micromodal-close>
+                <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+                    <header class="modal__header">
+                        <h2 class="modal__title" id="book-title">
+                            <!--Title-->
+                        </h2>
+                        <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+                    </header>
+
+                    <main class="modal__content" id="book-content" style="float:left">
+                        <form>
+                            <input type="text" class="form-control" id="fname" placeholder="First name" required>
+                            <input type="text" class="form-control" id="lname" placeholder="Last name" required>
+                            <select name="ppl" class="form-control tm-select" id="pplnum">
+                                <option value="">How many people?</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                            <div class="form-group tm-form-element tm-form-element-50">
+                                <i class="fa fa-calendar fa-2x tm-form-element-icon"></i>
+                                <input name="check-in" type="text" class="form-control" id="inputCheckIn" placeholder="Check In" style='padding: 0.75rem 0.75rem 0.75rem 45px;'>
+                            </div>
+                            <div class="form-group tm-form-element tm-form-element-50">
+                                <i class="fa fa-calendar fa-2x tm-form-element-icon"></i>
+                                <input name="check-out" type="text" class="form-control" id="inputCheckOut" style="padding: 0.75rem 0.75rem 0.75rem 45px;" placeholder="Check Out" >
+                            </div>
+                            <input name="check-in" type="text" class="form-control" id="bookCheckIn" placeholder="Check In">
+                            <input name="check-out" type="text" class="form-control" id="bookCheckOut" placeholder="Check Out">
+
+                        </form>
+                    </main>
+                    <footer class="modal__footer">
+                        <!--<button id="booknow" type="submit" class="btn btn-primary tm-btn-search">Book now</button>-->
+                        <button class="btn btn-primary tm-btn-search" data-micromodal-close aria-label="Close this dialog window">Close</button>
+                    </footer>
+                </div>
+            </div>
+        </div>
+
+
+        <!--View Details------------------------------------------------------------------------------------->
+        <div class="modal micromodal-slide" id="modal-1" aria-hidden="true">
+            <div class="modal__overlay" tabindex="-3" data-micromodal-close>
+                <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+                    <header class="modal__header">
+                        <h2 class="modal__title" id="modal-1-title">
+                            <!--Title-->
+                        </h2>
+                        <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+                    </header>
+                    <div id="imgdet" style="width: 40%; float:left; height:150px; margin:3px">
+                        First DIV
+                    </div>
+                    <div id="google-mapd" style="width: 50%; float:left; height:150px; background:yellow; margin:3px">
+
+                    </div>
+                    <main class="modal__content" id="modal-1-content" style="float:left">
+                        <!--main-->
+                    </main>
+                    <footer class="modal__footer">
+                        <!--<button type="submit" class="btn btn-primary tm-btn-search">Book now</button>-->
+                        <button class="btn btn-primary tm-btn-search" data-micromodal-close aria-label="Close this dialog window">Close</button>
+                    </footer>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="tm-section tm-section-pad tm-bg-gray" id="tm-section-4">
+            <div class="container">
+                <div id="ttl">
+
+                </div>
+
+                <div class="tm-bg-white ie-container-width-fix-2">
+                    <div class="container ie-h-align-center-fix">
+                        <div class="row" id="results">
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="tm-bg-white ie-container-width-fix-2">
+                    <div class="container ie-h-align-center-fix">
+                        <h1 style="background-color: #f44336;color: white;padding: 8px 15px;text-align: center;font-weight: 600;border-color: #ee5057;border: 1px solid transparent;font-family: inherit">Recommended</h1>
+                    </div>
+                </div>
+                <div class="tm-bg-white ie-container-width-fix-2">
+                    <div class="container ie-h-align-center-fix">
+                        <div class="row" id="recomnds">
+
+
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tm-section tm-section-pad tm-bg-img tm-position-relative" id="tm-section-6">
+                    <div class="container ie-h-align-center-fix">
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-7">
+                                <div id="google-map"></div>
+                            </div>
+                            <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-5 mt-3 mt-md-0">
+                                <div id="contact" class="tm-bg-white tm-p-4">
+
+                                    <h1 style="color:black">Contact us</h1>
+
+                                    <form action="index.html" method="post" class="contact-form" onsubmit="sendEmail(); reset(); return false">
+                                        <div class="form-group">
+                                            <input type="text" id="contact_name" name="contact_name" class="form-control" placeholder="Name" required />
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="email" id="contact_email" name="contact_email" class="form-control" placeholder="Email" required />
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" id="contact_phone" name="contact_phone" class="form-control" placeholder="Phone no." required />
+                                        </div>
+                                        <div class="form-group">
+                                            <textarea id="contact_message" name="contact_message" class="form-control" rows="9" placeholder="How can we help you?" required></textarea>
+                                        </div>
+                                        <button type="submit">Send</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="tm-bg-dark-blue">
+                    <div class="container">
+                        <div class="row">
+                            <p class="col-sm-12 text-center tm-font-light tm-color-white p-4 tm-margin-b-0">
+                                Copyright &copy; <span class="tm-current-year">2018</span> Your Company
+
+                                - Design: Tooplate
+                            </p>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <script src=" https://smtpjs.com/v3/smtp.js"></script>
+        <script>
+            function sendEmail() {
+                Email.send({
+                    Host: "smtp.gmail.com",
+                    Username: "shlomoesa@gmail.com",
+                    Password: "Shlomo203320270",
+                    To: 'benshermaister@gmail.com',
+                    From: document.getElementById("contact_email").value,
+                    Subject: "New Contact Form Enquiry",
+                    Body: document.getElementById("contact_message").value
+                }).then(
+                    message => alert(message)
+                );
+            }
+        </script>
+
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+        <!-- load JS files -->
+        <script src="js/jquery-1.11.3.min.js"></script>             <!-- jQuery (https://jquery.com/download/) -->
+        <script src="js/popper.min.js"></script>                    <!-- https://popper.js.org/ -->
+        <script src="js/bootstrap.min.js"></script>                 <!-- https://getbootstrap.com/ -->
+        <script src="js/datepicker.min.js"></script>                <!-- https://github.com/qodesmith/datepicker -->
+        <script src="js/jquery.singlePageNav.min.js"></script>      <!-- Single Page Nav (https://github.com/ChrisWojcik/single-page-nav) -->
+        <script src="slick/slick.min.js"></script>                  <!-- http://kenwheeler.github.io/slick/ -->
+        <script>
+
+            /*------- Google map ------------------------------------------------*/
+            var map = '';
+            var center;
+
+            function initialize() {
+                var mapOptions = {
+                    zoom: 16,
+                    center: new google.maps.LatLng(lat, lon),
+                    scrollwheel: false
+                };
+
+                map = new google.maps.Map(document.getElementById(id), mapOptions);
+                new google.maps.Marker({
+                    position: new google.maps.LatLng(lat, lon),
+                    map: map,
+                });
+                google.maps.event.addDomListener(map, 'idle', function () {
+                    calculateCenter();
+                });
+
+                google.maps.event.addDomListener(window, 'resize', function () {
+                    map.setCenter(center);
+                });
+            }
+
+            function calculateCenter() {
+                center = map.getCenter();
+            }
+
+            function loadGoogleMap(_id = 'google-map', _lat = 52.3728953, _lon = 4.8946891) {
+                id = _id
+                lat = _lat
+                lon = _lon
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDVWt4rJfibfsEDvcuaChUaZRS5NXey1Cs&v=3.exp&sensor=false&' + `callback=initialize`;
+                document.body.appendChild(script);
+            }
+
+
+            function setPageNav() {
+                if ($(window).width() > 991) {
+                    $('#tm-top-bar').singlePageNav({
+                        currentClass: 'active',
+                        offset: 79
+                    });
+                }
+                else {
+                    $('#tm-top-bar').singlePageNav({
+                        currentClass: 'active',
+                        offset: 65
+                    });
+                }
+            }
+
+            $(document).ready(function () {
+
+                $(window).on("scroll", function () {
+                    if ($(window).scrollTop() > 100) {
+                        $(".tm-top-bar").addClass("active");
+                    } else {
+                        //remove the background property so it comes transparent again (defined in your css)
+                        $(".tm-top-bar").removeClass("active");
+                    }
+                });
+
+                // Google Map
+                loadGoogleMap();
+                // Date Picker
+                const pickerCheckIn = datepicker('#inputCheckIn',
+                    {
+                        formatter: (input, date, instance) => {
+                            const value = date.toLocaleDateString()
+                            input.value = value // => '1/1/2099'
+                        }
+                    })
+                const pickerCheckOut = datepicker('#inputCheckOut',
+                    {
+                        formatter: (input, date, instance) => {
+                            const value = date.toLocaleDateString()
+                            input.value = value // => '1/1/2099'
+                        }
+                    })
+
+
+
+                $(window).resize(function () {
+
+                    setPageNav();
+                });
+
+                // Close navbar after clicked
+                $('.nav-link').click(function () {
+                    $('#mainNav').removeClass('show');
+                });
+
+
+                // Update the current year in copyright
+                $('.tm-current-year').text(new Date().getFullYear());
+                function deg2rad(deg) {
+                    return deg * (Math.PI / 180)
+                }
+
+
+            });
+            
+        </script>
+
+        <script src="https://unpkg.com/micromodal/dist/micromodal.min.js">
+           
+        </script>
+    </div>
+</body>
+</html>
+

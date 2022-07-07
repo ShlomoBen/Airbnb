@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!--<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">-->
+
+    <title>Registration</title>
+    <!--
+
+    Template 2095 Level
+
+    http://www.tooplate.com/view/2095-level
+
+    -->
+    <!-- load stylesheets -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">  <!-- Google web font "Open Sans" -->
+    <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">                <!-- Font Awesome -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">                                      <!-- Bootstrap style -->
+    <link rel="stylesheet" type="text/css" href="slick/slick.css" />
+    <link rel="stylesheet" type="text/css" href="slick/slick-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/datepicker.css" />
+    <link rel="stylesheet" href="css/tooplate-style - Register.css">                                   <!-- Templatemo style -->
+    <link rel="stylesheet" href="css/rSlider.min.css">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <![endif]-->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <script>
+        //---------Register func--------------
+        $(document).ready(function () {
+            $("#submit").click(addUser);
+        });
+
+        function addUser() {
+            let username = $("#uname").val();
+            let password = $("#pd").val();
+            let email = $("#email").val();
+           
+            let user = {
+                Username: username,
+                Password: password,
+                Email: email,
+
+            }
+
+            let api = "../api/User";
+            ajaxCall("POST", api, JSON.stringify(user), addUserSuccessCB, addUserErrorCB);
+        }
+
+        function addUserSuccessCB(user) {
+            console.log(user);
+            localStorage.setItem("user-login", JSON.stringify(user));
+            localStorage.setItem("user-email", JSON.stringify(user.Email));
+            swal("Register Success!", "Welcome " + user.Username, "success");
+
+            setTimeout(function () {
+                window.location.href = "index.html";
+            }, 3000);
+            
+
+        }
+
+        function addUserErrorCB(err) {
+            console.log(err);
+        }
+
+
+        //-----Login func---------------
+        $(document).ready(function () {
+            $("#login").click(loginUser);
+        });
+
+        function loginUser() {
+            let emaillogin = $("#emaillogin").val();
+            let passwordlogin = $("#passwordlogin").val();
+
+            api = "../api/User?email=" + emaillogin + "&password=" + passwordlogin;
+            ajaxCall("GET", api, "", loginUserSuccessCB, loginUserErrorCB);
+
+            return false;
+        }
+
+        function loginUserSuccessCB(user) {
+
+            if (user != null) {
+                localStorage.clear();
+                localStorage.setItem("user-login", JSON.stringify(user));
+                localStorage.setItem("user-email", JSON.stringify(user.Email));
+                swal("Login Success!", "Welcome back " + user.Username, "success");
+
+                    setTimeout(function () {
+                        window.location.href = "index.html";
+                    }, 3000);
+
+            }
+            else if (user == null) {
+                alert("wrong Email or Password")
+            }
+        }
+
+        function loginUserErrorCB(err) {
+            console.log(err);
+        }
+
+
+
+    </script>
+
+</head>
+
+<body>
+    <div class="tm-main-content" id="top">
+        <div class="tm-top-bar-bg"></div>
+        <div class="tm-top-bar" id="tm-top-bar">
+            <!-- Top Navbar -->
+            <div class="container">
+                <div class="row">
+
+                    <nav class="navbar navbar-expand-lg narbar-light">
+                        <a class="navbar-brand mr-auto" href="#">
+                            <img src="img/logo.png" alt="Site logo">
+                            airbns
+                        </a>
+                        <button type="button" id="nav-toggle" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div id="mainNav" class="collapse navbar-collapse tm-bg-white">
+                            <div class="navbar-nav ml-auto">
+                                <div class="nav-item">
+                                    <a class="nav-link" href="index.html" onclick="document.location='index.html'">HOME</a>
+                                </div>
+                                
+                                <div class="nav-item" id="ltd">
+                                    <a class="nav-link" href="Register.html" onclick="document.location='Register.html'">REGISTER\LOGIN</a>
+                                </div>
+                                <div class="nav-item">
+                                    <a class="nav-link" onclick="document.location='index.html'" href="#tm-section-6">Contact Us</a>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <div class="tm-section tm-bg-img" id="tm-section-1">
+            <div class="tm-bg-white ie-container-width-fix-2">
+                <div class="container ie-h-align-center-fix">
+                    <div class="row">
+                        <div class="col-xs-12 ml-auto mr-auto ie-container-width-fix">
+                            <form class="tm-search-form tm-section-pad-2">
+
+                                <!--Login-->
+                                <!--Email-->
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="text" class="form-control" id="emaillogin" placeholder="Email" required>
+                                    </div>
+                                </div>
+                                <!--Password-->
+                                <div class="form-row tm-search-form-row">
+
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="password" class="form-control" id="passwordlogin" placeholder="Password" required>
+                                    </div>
+                                </div>
+
+                                <!--Submit login-->
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <button id="login" class="btn btn-primary tm-btn-search">Login</button>
+                                    </div>
+                                </div>
+
+                                <p>Do not have a user? Uer the registration form and join us!</p>
+
+                            </form>
+                            <form class="tm-search-form tm-section-pad-2">
+
+                                
+                                <!--Register-->
+                                <!--UserNmae-->
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-150">
+
+                                        <input type="text" class="form-control" id="uname" placeholder="Username" required>
+                                    </div>
+                                </div>
+
+                                <!--Password-->
+                                <div class="form-row tm-search-form-row">
+
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="password" class="form-control" id="pd" placeholder="Password" required>
+                                    </div>
+                                </div>
+
+                                <!--Email-->
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-150">
+                                        <input type="text" class="form-control" id="email" placeholder="Email" required>
+                                    </div>
+                                </div>
+
+                                <!--Submit register-->
+                                <div class="form-row tm-search-form-row">
+                                    <div class="form-group tm-form-element tm-form-element-2">
+                                        <button id="submit" class="btn btn-primary tm-btn-search">Registration</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        
+        <footer class="tm-bg-dark-blue">
+            <div class="container">
+                <div class="row">
+                    <p class="col-sm-12 text-center tm-font-light tm-color-white p-4 tm-margin-b-0">
+                        Copyright &copy; <span class="tm-current-year">2018</span> airbns
+
+                        - Design: Tooplate
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+  
+
+</body>
+</html>
+
